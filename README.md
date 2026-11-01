@@ -1,123 +1,70 @@
-# R1 kartogramy V2.5 - vsech 69 scenaru + OA / LNV / NV
+# R1 VISUM HTML export V2.6 - skladba vozidel primo podle TSys
 
-Tato verze je urcena pro aktualni stav projektu, kde jsou podle screenshotu z 1. 11. 2026
-vypoctene vsechny scenare 1-69.
-
-## Co vytvori
-
-- 69 absolutnich interaktivnich HTML map - jedna pro kazdy scenar.
-- 68 rozdilovych interaktivnich HTML map proti W_2025.
-- Celkem 137 HTML map.
-- Po kliknuti na smerovy link se zobrazi Celkem, OA, LNV a NV.
-- V rozdilove mape se zobrazi pro kazdou tridu W_2025, varianta a rozdil varianta - W_2025.
-- Pan, zoom, vyhledavani linku, ridke ciselne popisky a nativni WKTPOLY geometrie zustavaji zachovane.
-- Konecny sdileci ZIP obsahuje pouze samostatne HTML soubory.
-
-Jednotky jsou vozidla za analyticke obdobi AP, nikoli automaticky RPDI.
-Oba smery linku zustavaji oddelene a nesectou se.
-
-## Scenare
-
-Zpracovavaji se scenare 1-69 vcetne:
-
-- W_2022, W_2025, W_2040, W_2050, W_2060, W_2070,
-- vsech 15 variant pro roky 2040, 2050, 2060 a 2070,
-- scenaru 52-54 Fialova a zelena varianta - S1/S2/S3 - rok 2040.
-
-S1 = C 24,5/120 v plnem profilu
-S2 = C 24,5/120 v polovicnim profilu
-S3 = C 11,5/90
-
-Autoritou identity je cislo scenare. To je dulezite hlavne pro scenare s nestandardnim kodem.
-
-## Python
-
-Pouziva se pouze EXTERNI 64bitovy Python s pywin32. Python dodany s Visumem je blokovan.
-Predvyplnena cesta k projektu a output_root je v CONFIGURE_PATHS.json.
-
-## Postup
-
-### A. Zakladni export geometrie a celkovych intenzit
-
-1. `00_CHECK_EXTERNAL_PYTHON.bat`
-2. `01_SCAN_RESULTS.bat`
-3. Otevrit `C:\Users\vilem_knap\R1_VISUM_DIFF_RESULTS\scenarios.csv` a zkontrolovat, ze vsech 69 radku ma nalezeny result.ver.
-4. `02_RUN_EXPORT.bat`
-5. `06_VERIFY_OUTPUTS.bat`
-
-Uspech zakladniho exportu:
-
-- `RUN_ALL_69_ABS_DIFF_V25_BASE\00_STATUS.json` ma `status = PASS`
-- `versions_exported = 69`
-- `absolute_cartograms_created = 69`
-- `cartograms_created = 68`
-- `total_cartograms_created = 137`
-- `errors = []`
-
-Zakladni export pouze nacita ulozene result.ver. Nespousti assignment a neuklada zadny model.
-
-### B. Export skladby OA / LNV / NV
-
-6. `10_PROBE_VEHICLE_CLASSES.bat`
-   - otevre pouze W_2025,
-   - zjisti skutecne demand segmenty,
-   - vybere jednoznacne mapovani OA/LNV/NV,
-   - overi soucet proti VOLVEHPRT(AP).
-
-7. `11_EXPORT_VEHICLE_CLASSES.bat`
-   - postupne nacte vsech 69 result.ver,
-   - vyexportuje skladbu vozidel,
-   - pri opakovanem spusteni pouzije overenou cache.
-
-Uspech:
-`RUN_ALL_69_V25_CLASSES_EXPORT\00_CLASSES_STATUS.json` ma `status = PASS`, `selected = 69`, `exported = 69`, `errors = []`.
-
-### C. HTML mapy se skladbou vozidel
-
-8. `12_PREPARE_HTML_MAPS.bat`
-9. `13_VERIFY_HTML_MAPS.bat`
-
-Hotove mapy:
-`C:\Users\vilem_knap\R1_VISUM_DIFF_RESULTS\RUN_ALL_69_V25_HTML_VEHICLE_CLASSES\INDEX.html`
-
-Ocekavany stav:
-
-- 69 absolutnich HTML,
-- 68 rozdilovych HTML,
-- 137 map celkem,
-- geometrie a puvodni celkove intenzity beze zmen,
-- OA + LNV + NV (+ explicitni OTHER, pokud by byl nastaven) = Celkem.
-
-### D. Maly balik pro odeslani
-
-10. `14_ZIP_HTML_ONLY.bat`
-
-Vznikne:
-`C:\Users\vilem_knap\R1_VISUM_DIFF_RESULTS\R1_KARTOGRAMY_HTML_OA_LNV_NV_ALL_69.zip`
-
-Archiv obsahuje pouze 137 samostatnych HTML souboru. Zadny CSV, GPKG, SVG, Python, log ani INDEX.html.
-Kazdy HTML je offline a obsahuje geometrii i hodnoty uvnitr souboru.
+Aktualni verze exporteru pro vsech 69 vypoctenych scenaru. Produkcni beh nad R1 skoncil PASS pro 69 absolutnich + 68 rozdilovych = 137 HTML map; nezavisla QA potvrdila nezmenenou geometrii u vsech 137 map.
 
 ## Vozova skladba
 
-Nastroj neodhaduje OA jako zbytek celku. Nejprve overi skutecne demand segmenty ve W_2025.
-Zname podporovane profily jsou:
+V2.6 uz nepouziva demand segmenty pro odhad skladby. Cte primo vysledkove atributy PTV Visum podle transport systemu:
 
-- `R1_STANDARD_6`: OA = CW + CW_noT + CS + CS_noT + CL + CF; LNV = LNV; NV = NV.
-- `R1_NATIVE_AND_EXOG_12`: OA obsahuje stejne sestice v NATIVE_ a EXOG_EE_ vetvi; LNV = LNV; NV = NV.
-- `R1_C_AND_CNOT`: OA = C + C_noT pouze pokud jde o registrovane demand segmenty.
+- `VolVeh_TSys(C,AP)`
+- `VolVeh_TSys(C_noT,AP)`
+- `VolVeh_TSys(LNV,AP)`
+- `VolVeh_TSys(NV,AP)`
+- `VolVeh_TSys(F_T,AP)` pouze pro QA, pokud je pritomen
+- `VolVehPrT(AP)` jako autoritativni celkovy PrT soucet pro kontrolu
 
-Pouzije se pouze takovy profil, ktery na kazdem smerovem linku splni soucet proti celku.
-Chybejici atribut se nikdy nenahrazuje nulou.
+Definice v HTML panelu:
 
-## Bezpecnost modelu
+- **OA = C + C_noT**
+- **LNV = LNV**
+- **NV = NV**
+- **Silnicni celkem = OA + LNV + NV**
 
-Skripty nepouzivaji SaveVersion, SetAttValue ani Procedures.Execute.
-Result.ver se nacitaji read-only do samostatne COM instance `Visum.Visum.260`.
-Kontrolni SHA256 puvodnich result.ver brani spojeni skladby vozidel s jinym behem site.
+`F_T` ani dalsi budouci PrT TSys se nepricita do OA/LNV/NV. Zůstava jen v QA. Dalsi neznamy PrT TSys se eviduje jako `UNMAPPED_PRT`, ne jako fatalni zmena mapovani.
 
-## Testovani dodavky
+## QA reconciliation
 
-Soucasti baliku je TEST_REPORT.json.
-Na syntetickych datech probehl kompletni retezec 69 result.ver -> 137 zakladnich map -> 69 exportu skladby -> 137 obohacenych HTML -> HTML-only ZIP.
-Skutecny Windows COM beh nad produkcnimi result.ver samozrejme musi probehnout na pocitaci s PTV Visum 2026.
+Pro kazdy smerovy link se kontroluje:
+
+`VOLVEHPRT(AP) = soucet vsech citelnych PrT VolVeh_TSys(...,AP)`
+
+Geometrie a puvodni kartogramovy `VOLVEHPRT(AP)` se pri doplneni skladby nemeni.
+
+## Rozsah
+
+- 69 scenaru
+- 69 absolutnich HTML
+- 68 rozdilovych HTML proti W_2025
+- 137 HTML celkem
+- nativni WKTPOLY geometrie
+- pan / zoom / vyhledavani
+- spravne nazvy variant a profilu S1/S2/S3
+- OA / LNV / NV po kliknuti na smerovy link
+- offline HTML bez externich zavislosti
+
+## Spusteni
+
+Pokud uz je zakladni export hotovy, pouzij:
+
+1. `00_CHECK_EXTERNAL_PYTHON.bat`
+2. `10_PROBE_VEHICLE_CLASSES.bat`
+3. `11_EXPORT_VEHICLE_CLASSES.bat`
+4. `12_PREPARE_HTML_MAPS.bat`
+5. `13_VERIFY_HTML_MAPS.bat`
+6. `14_ZIP_HTML_ONLY.bat`
+
+Zakladni export lze vytvorit pres `01_SCAN_RESULTS.bat`, `02_RUN_EXPORT.bat`, `06_VERIFY_OUTPUTS.bat`.
+
+Pouziva se pouze externi 64bit Python s `pywin32`. Workflow je read-only: zadny assignment, `Procedures.Execute`, `SaveVersion` ani `SetAttValue`.
+
+## Distribuce
+
+Aktualni overeny balik:
+
+`dist/R1_VISUM_ALL69_V2_6_TSYS_VEHICLE_CLASSES_20261101.zip`
+
+SHA-256:
+
+`783019f9275f719efcb1d808f9348c3d1b693992df74ba3ab3a2f72599b8cc4b`
+
+Predchozi V2.5 zustava v historii repozitare.
